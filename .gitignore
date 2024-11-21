@@ -1,5 +1,3 @@
-# Node modules
+out.*
 node_modules/
-out.glb
-
-
+yarn-error.log

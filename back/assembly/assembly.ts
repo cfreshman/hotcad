@@ -1,24 +1,17 @@
-## hotcad is just dingcad rewritten in my codestyle
+import { ManifoldToplevel } from '../lib/manifold/built/manifold';
 
-credits to yacineMTB https://github.com/yacineMTB/dingcad
+export const assembly = (manifold: ManifoldToplevel) => {
+  const { Manifold } = manifold
+  const { cube, sphere } = Manifold
 
-# hotcad
+  const size_mm = 32
+  let assembly = cube(1, true).subtract(sphere(.6, 100)).scale(size_mm).translate([0, 0, size_mm/2])
 
-hot-reloaded CAD in the browser
+  return assembly
+}
 
-### usage
-> prerequisites: node (https://nodejs.org/en/download) & yarn (`npm install --global yarn`)
-
-```
-git clone https://github.com/cfreshman/hotcad/ && cd hotcad
-yarn
-yarn start
-```
-> open https://localhost:3425 and edit back/assembly/assembly.ts
-
-### manifold API
-
-```ts
+`
+// MANIFOLD API - for LLM code completion
 // Triangulates polygons
 export function triangulate(polygons: Polygons, precision?: number): Vec3[];
 
@@ -139,5 +132,4 @@ export class Manifold {
   getProperties(): Properties;
   minGap(other: Manifold, searchLength: number): number;
 }
-
-```
+`
