@@ -11,7 +11,7 @@ manifoldModule.setup()
 const defaults = {
   roughness: 1,
   metallic: .25,
-  baseColorFactor: [0.55, .9, .55],
+  baseColorFactor: [.5, .9, .55],
   alpha: 1,
   unlit: false,
   animationLength: 1,

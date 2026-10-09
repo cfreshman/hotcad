@@ -1,13 +1,115 @@
 import { ManifoldToplevel } from '../lib/manifold/built/manifold';
+import { part_pico_w } from './parts/pico_w_2';
 
-export const assembly = (manifold: ManifoldToplevel) => {
-  const { Manifold } = manifold
-  const { cube, sphere } = Manifold
+export const assembly = (M: ManifoldToplevel) => {
+  const m = M.Manifold
 
-  const size_mm = 32
-  let assembly = cube(1, true).subtract(sphere(.6, 100)).scale(size_mm).translate([0, 0, size_mm/2])
+  const shapes = []
+  const sx = 51
+  const sy = 21
+  const sz = 1
+  
+  // pico mount
+  {
+    const cz = 5
+    const tc = 2
+    const gap = .4
+    const yinner = 16
+    const xthinstart = 2 + 2.1/2
+    const ythin = xthinstart // yinner / 3
+    const ystart = (sy - yinner)/2
+    const tol = .1
 
-  return assembly
+    // create bottom
+    {
+      // board
+      let bottom = m.cube([sx, yinner, tc]).translate([0, ystart, 0])
+      {
+        // mounting holes
+        const rh = 2.1/2 - tol
+        const startx = 2
+        const starty = (21 - 11.4) / 2
+        for (let y = starty; y < sy; y += 11.4) {
+          for (let x = startx; x < sx; x += (51 - 2*2)) {
+            const rbump = rh + tol/2
+            const zbump = sz/2
+
+            let hole = m.cylinder(sz + zbump/2, rh, rh, 64).translate([x, y, tc])
+            bottom = bottom.add(hole)
+
+            let bump = m.sphere(rbump, 64).scale([1, 1, zbump / (2*rbump)]).translate([x, y, tc + sz + zbump/2])
+            bottom = bottom.add(bump)
+          }
+        }
+
+        // subtract out sides
+        const thinout = m.cube([sx - xthinstart * 2, ythin, tc]).translate([xthinstart, sy/2 - ythin/2, 0])
+        const thinin = m.cube([sx - xthinstart * 2, yinner, tc]).translate([xthinstart, ystart, 0]).subtract(thinout)
+        bottom = bottom.subtract(thinin)
+
+        // hook
+        const rhook = yinner/2
+        const whook = tc
+        const rinnerhook = rhook - whook
+        // hook outer
+        let hook = m.cylinder(tc, rhook, rhook, 64, true).translate([0, sy/2, tc/2])
+        // subtract hook inner to make actual hook
+        hook = hook.subtract(m.cylinder(tc, rinnerhook, rinnerhook, 64, true).translate([0, sy/2, tc/2]))
+        // subtract bottom half
+        hook = hook.subtract(m.cube([sx, sy, tc]))
+        // move out for gap between hook and board
+        const oxhook = 4
+        hook = hook.translate([-oxhook, 0, 0])
+        // connect with rectangular prism
+        hook = hook.add(m.cube([oxhook, whook, tc]).translate([-oxhook, sy/2 - yinner/2, 0]))
+        // fortify connection
+        const oxfortify = oxhook * 2
+        const wfortify = ythin - whook
+        // hook = hook.add(m.cube([oxfortify, wfortify, tc]).translate([-oxfortify, sy/2 - yinner/2 + whook, 0]))
+        
+        // bottom = bottom.add(hook)
+
+        // add prongs
+        let prongs = []
+        const zprong = 10
+        const rp = tc/2
+        const yrepeat = (sy - tc) / 5
+        const xoff = tc
+        const xlattice = yrepeat * 6 + tol
+        const prongbase = m.cube([xoff + xlattice, sy, tc]).translate([sx, 0, 0])
+        prongs.push(prongbase)
+        for (let x = 0; x <= xlattice; x += yrepeat) {
+          for (let y = 0; y <= sy; y += yrepeat) {
+            // const prong = m.cube([tc, tc, zprong]).translate([sx + tol, y, tc])
+            // cylinder instead
+            const prong = m.cylinder(zprong, rp - tol, rp - tol, 64).translate([x + sx + rp, y + rp, tc])
+            prongs.push(prong)
+          }
+        }
+        const prong_union = m.union(prongs)
+        bottom = bottom.add(prong_union)
+
+        // add prong cover
+        const wpc = tc
+        let prongcover = m.cube([xoff + xlattice + wpc*2, sy + wpc*2, tc]).translate([-wpc, -wpc, 0])
+        for (let x = 0; x <= xlattice; x += yrepeat) {
+          for (let y = 0; y <= sy; y += yrepeat) {
+            const prong = m.cylinder(zprong, rp + tol*2, rp + tol*2, 64).translate([x + rp, y + rp, 0])
+            prongcover = prongcover.subtract(prong)
+          }
+        }
+        shapes.push(prongcover.translate([wpc, -wpc - tc - sy, 0]))
+
+        // prong-side hook
+        let second_hook = hook.translate([-(sx + xoff + xlattice), 0, 0]).rotate([180, 0, 180]).translate([0, 0, tc])
+        bottom = bottom.add(second_hook)
+      }
+      // shapes.push(bottom.translate([-sx/2, -sy/2, 0]))
+      shapes.push(bottom)
+    }
+  }
+
+  return shapes.reduce((a, b) => m.union(a, b))
 }
 
 `
